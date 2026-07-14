@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คลังความรู้ · Claude Meetup #2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --bg:#F4EEE1; --card:#FBF7EF; --ink:#2B2621; --muted:#7A6E5E;
+  --line:#E4D6BF; --accent:#C15F2B; --accent-deep:#A44C1C;
+  --sum:#5B8AA6; --note:#C15F2B; --app:#7A9A4E;
+  --sum-bg:#DDEAF0; --note-bg:#F3E1D0; --app-bg:#E7EEDD;
+}
+[data-theme="dark"]{
+  --bg:#211C17; --card:#2C2620; --ink:#EFE7D8; --muted:#A99C88;
+  --line:#403830; --accent:#E0824E; --accent-deep:#E0824E;
+  --sum-bg:#25333C; --note-bg:#3A2A1C; --app-bg:#2A331F;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Sarabun',sans-serif;line-height:1.55;
+  transition:background .3s,color .3s;padding:0 0 60px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{border-bottom:1px solid var(--line);padding:22px 0 18px;margin-bottom:26px;
+  position:sticky;top:0;background:var(--bg);z-index:20}
+.top-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);
+  font-weight:600}
+.brand h1{font-family:'IBM Plex Sans Thai',sans-serif;font-size:26px;font-weight:700;margin-top:3px;
+  letter-spacing:-.01em}
+.controls{display:flex;align-items:center;gap:10px}
+.src-tag{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);
+  color:var(--muted);white-space:nowrap}
+.src-tag b{color:var(--accent)}
+.tbtn{background:var(--card);border:1px solid var(--line);color:var(--ink);cursor:pointer;
+  width:40px;height:40px;border-radius:10px;font-size:18px;display:grid;place-items:center}
+.tbtn:hover{border-color:var(--accent)}
+.banner{background:var(--note-bg);border:1px solid var(--accent);border-radius:12px;
+  padding:12px 16px;margin-bottom:22px;font-size:13.5px;color:var(--ink)}
+.banner b{color:var(--accent-deep)}
+.banner code{background:rgba(0,0,0,.06);padding:1px 6px;border-radius:5px;font-size:12.5px}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;
+  position:relative;overflow:hidden}
+.kpi .n{font-family:'IBM Plex Sans Thai',sans-serif;font-size:38px;font-weight:700;line-height:1}
+.kpi .l{font-size:13px;color:var(--muted);margin-top:6px}
+.kpi .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+.kpi.sum .bar{background:var(--sum)} .kpi.note .bar{background:var(--note)}
+.kpi.app .bar{background:var(--app)} .kpi.all .bar{background:var(--accent-deep)}
+/* charts */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.panel h3{font-family:'IBM Plex Sans Thai',sans-serif;font-size:15px;font-weight:600;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px}
+.panel h3 .dot{width:9px;height:9px;border-radius:50%}
+.chart-box{position:relative;height:230px}
+/* table */
+.tablewrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.tbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tbar input,.tbar select{font-family:inherit;font-size:13.5px;padding:9px 12px;border-radius:9px;
+  border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.tbar input{flex:1;min-width:180px}
+.tbar input:focus,.tbar select:focus{outline:none;border-color:var(--accent)}
+.count{font-size:13px;color:var(--muted);margin-left:auto}
+.count b{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--line);color:var(--muted);
+  font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;
+  position:sticky;top:0;background:var(--card)}
+tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:hover{background:var(--bg)}
+.badge{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;
+  white-space:nowrap}
+.b-sum{background:var(--sum-bg);color:var(--sum)} .b-note{background:var(--note-bg);color:var(--accent-deep)}
+.b-app{background:var(--app-bg);color:var(--app)}
+.tag{display:inline-block;font-size:11px;color:var(--muted);background:var(--bg);
+  border:1px solid var(--line);border-radius:6px;padding:1px 7px;margin:2px 3px 0 0}
+.imp-สูง{color:var(--accent);font-weight:600} .cell-title{font-weight:600;max-width:320px}
+.cell-detail{color:var(--muted);max-width:380px}
+.src{font-size:12px;color:var(--muted)}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:30px}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
+  .hide-sm{display:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap top-row">
+  <div class="brand">
+    <div class="eyebrow">Knowledge Archive</div>
+    <h1>คลังความรู้ · Claude Meetup #2</h1>
+  </div>
+  <div class="controls">
+    <span class="src-tag" id="srcTag">แหล่งข้อมูล: <b>—</b></span>
+    <button class="tbtn" id="reloadBtn" title="โหลดข้อมูลใหม่">↻</button>
+    <button class="tbtn" id="themeBtn" title="สลับธีม">🌙</button>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <div class="banner" id="banner"></div>
+
+  <div class="kpis">
+    <div class="kpi sum"><div class="bar"></div><div class="n" id="k-sum">0</div><div class="l">Summary · บทสรุป</div></div>
+    <div class="kpi note"><div class="bar"></div><div class="n" id="k-note">0</div><div class="l">TechNote · โน้ตเทคนิค</div></div>
+    <div class="kpi app"><div class="bar"></div><div class="n" id="k-app">0</div><div class="l">Apply · นำไปใช้</div></div>
+    <div class="kpi all"><div class="bar"></div><div class="n" id="k-all">0</div><div class="l">รวมทั้งหมด</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><h3><span class="dot" style="background:var(--note)"></span>TechNote แยกตามหมวด</h3><div class="chart-box"><canvas id="chCat"></canvas></div></div>
+    <div class="panel"><h3><span class="dot" style="background:var(--note)"></span>สัดส่วนประเภทโน้ต</h3><div class="chart-box"><canvas id="chType"></canvas></div></div>
+    <div class="panel"><h3><span class="dot" style="background:var(--note)"></span>TechNote แยกตามความสำคัญ</h3><div class="chart-box"><canvas id="chImp"></canvas></div></div>
+    <div class="panel"><h3><span class="dot" style="background:var(--app)"></span>Apply แยกตามสถานะ</h3><div class="chart-box"><canvas id="chApp"></canvas></div></div>
+  </div>
+
+  <div class="tablewrap">
+    <div class="tbar">
+      <input id="q" placeholder="🔍 ค้นหา หัวข้อ / รายละเอียด / tags ...">
+      <select id="fKind"><option value="">ทุกชนิด</option><option>Summary</option><option>TechNote</option><option>Apply</option></select>
+      <select id="fCat"><option value="">ทุกหมวด</option></select>
+      <span class="count">พบ <b id="cnt">0</b> รายการ</span>
+    </div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>ID</th><th>ชนิด</th><th>หัวข้อ / รายละเอียด</th>
+        <th class="hide-sm">หมวด</th><th class="hide-sm">ความสำคัญ</th>
+        <th class="hide-sm">Tags</th><th class="hide-sm">ที่มา</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>
+
+  <footer>สกัดจาก e-book Claude Thailand Community Meetup #2 · เนื้อหาเรียบเรียง (paraphrased) · อัปเดตล่าสุด <span id="ts"></span></footer>
+</div>
+
+<script>
+// ===== CONFIG =====
+// วาง URL ของ Google Sheet ที่ Publish to web เป็น CSV ตรงนี้ เพื่อใช้โหมด Live
+// (File > Share > Publish to web > เลือกแท็บ "คลังข้อมูล" > รูปแบบ CSV)
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfVacRR9nVA4MizsXQ2gyIClwvpHkbIQt5mF31jV_Ptu6TA3bMsoqyT4dxi6adUsjUdII78P-xOro8/pub?gid=1763541781&single=true&output=csv";  // <-- Live: แท็บคลังข้อมูล
+
+// ===== ข้อมูลสำรองฝังในไฟล์ (embedded fallback) =====
+const EMBEDDED = [{"id": "SUM-00", "kind": "Summary", "title": "บทเปิดงาน & กำเนิดชุมชน Claude ประเทศไทย", "detail": "เล่าจุดเริ่มชุมชนจากโพสต์เฟซบุ๊กเล็ก ๆ สู่ Meetup #2 ที่สยามพารากอน 4 ก.ค. 2569 ธีมงาน จากผู้ใช้ สู่ผู้สร้าง", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-opening", "tags": "community,opening", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-01", "kind": "Summary", "title": "DEEP: การทำงานเชิงลึกกับ Claude", "detail": "กรอบทำงานเชิงลึก 4 เสา D-E-E-P ชวนก้าวจากเล่น AI สู่ทำงานกับ AI ความฉลาดของคำตอบเริ่มที่บริบทที่เราป้อน ไม่ใช่ที่โมเดล", "ptype": "", "cat": "", "tech": "", "work": "Prompt", "importance": "", "effort": "", "source": "#ch-deep", "tags": "deep,context,framework", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-02", "kind": "Summary", "title": "สร้าง Enterprise AI ด้วย Claude บน Amazon Bedrock", "detail": "ปิดช่องว่างจาก prototype สู่ production ระดับองค์กร ตอบโจทย์ privacy สเกลล้านคำขอ และ governance ผ่าน Bedrock", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-bedrock", "tags": "bedrock,enterprise,aws", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-03", "kind": "Summary", "title": "ติดสปีด 10X ให้องค์กร ด้วย Claude Cowork & Code", "detail": "คณิตศาสตร์ใหม่ 1 Senior + AI = ทีม 5-10 คน เตือน Junior ต้องเก่ง AI และไต่เป็น Senior context คืออาวุธลับ", "ptype": "", "cat": "", "tech": "", "work": "Dashboard", "importance": "", "effort": "", "source": "#ch-cowork", "tags": "cowork,productivity,senior", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-04", "kind": "Summary", "title": "เส้นทางสู่ Loop Engineering", "detail": "loop ที่ดีต้อง earn ไม่ใช่ก๊อปมาใช้ เตือนอย่า all-in loop ตั้งแต่วันแรก ให้ไต่บันได 4 ขั้นจนมีของจริงก่อน", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-loop", "tags": "loop,agent,coding", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-05", "kind": "Summary", "title": "Model Welfare: เราทำผิดต่อ AI ได้ไหม?", "detail": "คำถามกลับด้านจากความปลอดภัยของเรา สู่สวัสดิภาพของโมเดล ชวนคิดว่าจะวางตัวอย่างไรในวันที่ยังไม่รู้", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-welfare", "tags": "welfare,ethics", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-06", "kind": "Summary", "title": "สร้างระบบนิเวศธุรกิจของคุณด้วย Claude", "detail": "ยุคที่ใครก็ Build ได้ moat ย้ายที่ อย่าเทหมดหน้าตักที่ Build อย่างเดียว ต้องมีคนจ่ายเงินซื้อจริง", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-saas", "tags": "saas,business,moat", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-07", "kind": "Summary", "title": "นักพัฒนาในยุค AI", "detail": "AI ไม่แทนที่ dev แต่แทนที่ วิธีที่ dev ทำงาน บทบาทเลื่อนขึ้นจากผู้ผลิตโค้ดสู่ผู้ออกแบบระบบและผู้ตัดสินใจ", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-devs", "tags": "developer,role-shift", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-08", "kind": "Summary", "title": "Speed and Soul: Claude สำหรับโฆษณา & การตลาด", "detail": "Speed is Claude, Soul is Human ความเร็วเป็นสกุลเงินใหม่ แต่ต้องรู้ว่าอะไรควรเร่ง อะไรห้ามรีบ", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-adv", "tags": "advertising,marketing,speed", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-09", "kind": "Summary", "title": "Claude ในมุมมองกฎหมาย", "detail": "เริ่มด้วยความโปร่งใส จบด้วยการตรวจสอบ ระวังคำพิพากษาที่ฟังดูน่าเชื่อแต่ไม่มีจริง ต้อง verify ทุกครั้ง", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-legal", "tags": "legal,verification,hallucination", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-10", "kind": "Summary", "title": "Vibe Analytics: จากข้อมูลดิบสู่ Insight", "detail": "AI to build, deterministic to run แก่นคือรู้ว่าเมื่อไหร่ใช้ AI เมื่อไหร่ปล่อยให้โค้ดทำงานแทน แยกงานให้ถูก", "ptype": "", "cat": "", "tech": "", "work": "Dashboard", "importance": "", "effort": "", "source": "#ch-analytics", "tags": "analytics,data,workflow", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-11", "kind": "Summary", "title": "Claude เพื่อการเรียนรู้: สร้าง Learning OS ส่วนตัว", "detail": "สร้างระบบที่เรียนรู้แทนเราทุกเช้า ตรวจข้อเท็จจริงเอง เก็บเข้าคลัง แล้วจับผู้บรรยายสอบเพื่อไม่ให้ลืม", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-learning", "tags": "learning,knowledge,os", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-12", "kind": "Summary", "title": "Claude กับการพลิกโฉมสายการผลิตงานสร้างสรรค์", "detail": "AI เขียนสูตรเศรษฐศาสตร์ของหนัง/โฆษณาใหม่ งานที่เคยกินงบล้านและหลายสัปดาห์ เสร็จใน 72 ชม.", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#ch-creative", "tags": "creative,production,pipeline", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-13", "kind": "Summary", "title": "ภาคผนวก: ตระกูลโมเดล Claude และการเลือกใช้", "detail": "Opus (ฉลาดสุด) / Sonnet (สมดุล) / Haiku (เร็ว-ประหยัด) เลือกจากความยากงานคู่กับงบและความเร็วที่รับได้", "ptype": "", "cat": "", "tech": "", "work": "ทั่วไป", "importance": "", "effort": "", "source": "#apx-models", "tags": "models,opus,sonnet,haiku", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-14", "kind": "Summary", "title": "ภาคผนวก: Chat / Cowork / Code เลือกใช้เมื่อไหร่", "detail": "สามหน้าตา เครื่องยนต์เดียว บัญชีเดียว จ่ายแพ็กเดียว Chat=ถามตอบ Cowork=knowledge work Code=นักพัฒนา", "ptype": "", "cat": "", "tech": "", "work": "Dashboard", "importance": "", "effort": "", "source": "#apx-modes", "tags": "chat,cowork,code", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-15", "kind": "Summary", "title": "ภาคผนวก: ศิลปะการเขียน Prompt ฉบับใช้งานจริง", "detail": "ปรัชญาเล่าเรื่องดีกว่าสั่งเป็นขั้น ให้บริบท+เจตนาแล้วให้ Claude คิดต่อ พร้อมโครง 7 องค์ประกอบและเทมเพลต", "ptype": "", "cat": "", "tech": "", "work": "Prompt", "importance": "", "effort": "", "source": "#apx-prompt", "tags": "prompt,7-components,template", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "SUM-16", "kind": "Summary", "title": "ภาคผนวก: MCP, Agent และ Loop ฉบับเริ่มต้น", "detail": "ไล่คำ MCP/tool use/agent/loop แบบเข้าใจง่าย MCP=USB-C ของ AI, tool use=ความสามารถตัดสินใจเรียกเครื่องมือ", "ptype": "", "cat": "", "tech": "", "work": "MCP", "importance": "", "effort": "", "source": "#apx-mcp", "tags": "mcp,agent,tooluse,loop", "status": "สรุปแล้ว", "date": "2026-07-14"}, {"id": "NOTE-001", "kind": "TechNote", "title": "Deep Context — ป้อนบริบทให้ลึกและครบ", "detail": "ป้อนเอกสาร โค้ด และข้อมูลจริงแทนคำสั่งสั้น ๆ ยิ่งบริบทดีผลลัพธ์ยิ่งคม", "ptype": "หลักการ", "cat": "Model", "tech": "Deep Context", "work": "", "importance": "สูง", "effort": "", "source": "บท DEEP (#ch-deep)", "tags": "context,deep", "status": "", "date": "2026-07-14"}, {"id": "NOTE-002", "kind": "TechNote", "title": "Extended Thinking — เปิดโหมดคิดยาวกับงานยาก", "detail": "ปลดล็อกให้ Claude ไล่เหตุผลเป็นขั้นกับงานซับซ้อน แทนตอบจากปฏิกิริยาแรก", "ptype": "หลักการ", "cat": "Model", "tech": "Extended Thinking", "work": "", "importance": "สูง", "effort": "", "source": "บท DEEP (#ch-deep)", "tags": "thinking,reasoning", "status": "", "date": "2026-07-14"}, {"id": "NOTE-003", "kind": "TechNote", "title": "Evidence & Verification — ตรวจสอบผลเสมอ", "detail": "อย่าเชื่อคำตอบทันที ให้มีขั้นตรวจหลักฐาน/อ้างอิงก่อนใช้จริง ลดความเสี่ยง hallucination", "ptype": "หลักการ", "cat": "Model", "tech": "Verification", "work": "", "importance": "สูง", "effort": "", "source": "บท DEEP (#ch-deep)", "tags": "verify,evidence", "status": "", "date": "2026-07-14"}, {"id": "NOTE-004", "kind": "TechNote", "title": "Persistent Projects — งานต่อเนื่องมีความจำ", "detail": "เปลี่ยนบทสนทนาครั้งเดียวจบ เป็นกระบวนการที่ทำซ้ำได้และจำ context ทั้งโปรเจกต์", "ptype": "ประยุกต์ใช้", "cat": "Cowork", "tech": "Projects", "work": "", "importance": "กลาง", "effort": "", "source": "บท DEEP (#ch-deep)", "tags": "projects,memory", "status": "", "date": "2026-07-14"}, {"id": "NOTE-005", "kind": "TechNote", "title": "สมการใหม่: 1 Senior + AI = ทีม 5-10 คน", "detail": "คนมีประสบการณ์ 1 คนจับคู่ AI ที่ใช้เป็น สร้างผลผลิตเทียบทีม 5-10 คนแบบเดิม", "ptype": "หลักการ", "cat": "Cowork", "tech": "-", "work": "", "importance": "สูง", "effort": "", "source": "บท Cowork (#ch-cowork)", "tags": "productivity,senior", "status": "", "date": "2026-07-14"}, {"id": "NOTE-006", "kind": "TechNote", "title": "5 ทักษะ Senior ที่ AI ทดแทนยาก", "detail": "Judgment & Experience, Context Setting และทักษะเชิงวิจารณญาณอื่น ๆ คือสิ่งที่ควรลงทุนพัฒนา", "ptype": "หลักการ", "cat": "Cowork", "tech": "-", "work": "", "importance": "สูง", "effort": "", "source": "บท Cowork (#ch-cowork)", "tags": "skills,judgment", "status": "", "date": "2026-07-14"}, {"id": "NOTE-007", "kind": "TechNote", "title": "Context คืออาวุธลับของยุค AI", "detail": "ใครให้ context ดีชนะ การบรีฟงานให้ AI เหมือนมอบงานลูกทีม ยิ่งบรีฟดีผลยิ่งใกล้เป้า", "ptype": "หลักการ", "cat": "Cowork", "tech": "-", "work": "", "importance": "สูง", "effort": "", "source": "บท Cowork (#ch-cowork)", "tags": "context,brief", "status": "", "date": "2026-07-14"}, {"id": "NOTE-008", "kind": "TechNote", "title": "Routines — ให้ AI ทำงาน 24/7 แม้ปิดเครื่อง", "detail": "ตั้ง Routines/Scheduled ให้ทำงานต่อเนื่องเอง เป็นกลไก scale งานขององค์กร", "ptype": "ประยุกต์ใช้", "cat": "Cowork", "tech": "Routines", "work": "", "importance": "กลาง", "effort": "", "source": "บท Cowork (#ch-cowork)", "tags": "routines,automation", "status": "", "date": "2026-07-14"}, {"id": "NOTE-009", "kind": "TechNote", "title": "Loop Engineering — ออกแบบ loop ที่ prompt agent แทนเรา", "detail": "เปลี่ยนบทบาทจากคน prompt ทีละครั้ง เป็นคนออกแบบระบบวนซ้ำที่ให้ agent ทำ-ตรวจ-แก้เอง", "ptype": "หลักการ", "cat": "Loop", "tech": "Loop Engineering", "work": "", "importance": "กลาง", "effort": "", "source": "บท Loop (#ch-loop)", "tags": "loop,agent", "status": "", "date": "2026-07-14"}, {"id": "NOTE-010", "kind": "TechNote", "title": "You need to EARN the loop", "detail": "อย่า all-in loop ตั้งแต่วันแรก ต้องไต่บันไดสั่งสมประสบการณ์จนมีของจริงก่อน ไม่งั้น debug ไม่เป็น", "ptype": "หลักการ", "cat": "Loop", "tech": "-", "work": "", "importance": "สูง", "effort": "", "source": "บท Loop (#ch-loop)", "tags": "loop,discipline", "status": "", "date": "2026-07-14"}, {"id": "NOTE-011", "kind": "TechNote", "title": "บันได 4 ขั้นสู่ Loop Engineering", "detail": "ไต่ทีละขั้นพร้อมเกณฑ์วัดว่าผ่านหรือยัง ก่อนยกระดับเป็นการปล่อย agent วนงานเอง", "ptype": "ประยุกต์ใช้", "cat": "Loop", "tech": "-", "work": "", "importance": "กลาง", "effort": "", "source": "บท Loop (#ch-loop)", "tags": "loop,stairs", "status": "", "date": "2026-07-14"}, {"id": "NOTE-012", "kind": "TechNote", "title": "MCP = Model Context Protocol (USB-C ของ AI)", "detail": "มาตรฐานเปิดของ Anthropic เชื่อม AI กับเครื่องมือ/ข้อมูลภายนอกแบบมาตรฐาน ไม่ต้องเขียนกาวใหม่ทุกครั้ง", "ptype": "หลักการ", "cat": "MCP", "tech": "MCP", "work": "", "importance": "สูง", "effort": "", "source": "ภาคผนวก MCP (#apx-mcp)", "tags": "mcp,protocol", "status": "", "date": "2026-07-14"}, {"id": "NOTE-013", "kind": "TechNote", "title": "Tool use — Claude เรียกเครื่องมือเองเพื่อลดการเดา", "detail": "ระหว่างคุย ถ้างานต้องใช้ข้อมูลจริง Claude ขอเรียกเครื่องมือไปหยิบมายืนยัน จึง hallucination ต่ำ", "ptype": "หลักการ", "cat": "MCP", "tech": "Tool use", "work": "", "importance": "สูง", "effort": "", "source": "ภาคผนวก MCP (#apx-mcp)", "tags": "tooluse,hallucination", "status": "", "date": "2026-07-14"}, {"id": "NOTE-014", "kind": "TechNote", "title": "MCP (ท่อ) vs tool use (การตัดสินใจ)", "detail": "คนละชั้นแต่ทำงานคู่กัน MCP คือท่อที่ต่อเครื่องมือเข้ามา tool use คือความสามารถตัดสินใจเรียกใช้", "ptype": "หลักการ", "cat": "MCP", "tech": "MCP, Tool use", "work": "", "importance": "กลาง", "effort": "", "source": "ภาคผนวก MCP (#apx-mcp)", "tags": "mcp,tooluse", "status": "", "date": "2026-07-14"}, {"id": "NOTE-015", "kind": "TechNote", "title": "Opus / Sonnet / Haiku — เลือกให้ถูกงาน", "detail": "จับคู่ความยากงานกับงบและความเร็ว Opus งานคิดลึก Sonnet งานประจำ Haiku งานปริมาณมาก", "ptype": "หลักการ", "cat": "Model", "tech": "Opus, Sonnet, Haiku", "work": "", "importance": "สูง", "effort": "", "source": "ภาคผนวก Models (#apx-models)", "tags": "models,selection", "status": "", "date": "2026-07-14"}, {"id": "NOTE-016", "kind": "TechNote", "title": "Sonnet 5 — context ยาว 1M token เป็นค่าเริ่มต้น", "detail": "เหมาะกับงานอ่านเอกสารยาวหรือโค้ดเบสทั้งก้อน สมดุลฉลาด-เร็ว-ราคา", "ptype": "ประยุกต์ใช้", "cat": "Model", "tech": "Sonnet 5, 1M token", "work": "", "importance": "กลาง", "effort": "", "source": "ภาคผนวก Models (#apx-models)", "tags": "sonnet,context", "status": "", "date": "2026-07-14"}, {"id": "NOTE-017", "kind": "TechNote", "title": "Haiku — งาน high-volume low-latency", "detail": "เคสจริง DoorDash และ Crypto.com ใช้ Haiku รันงานเรียกซ้ำมหาศาลต่อวันเพื่อคุมต้นทุน", "ptype": "ประยุกต์ใช้", "cat": "Model", "tech": "Haiku 4.5", "work": "", "importance": "กลาง", "effort": "", "source": "ภาคผนวก Models (#apx-models)", "tags": "haiku,cost", "status": "", "date": "2026-07-14"}, {"id": "NOTE-018", "kind": "TechNote", "title": "Chat / Cowork / Code = ประตู 3 บาน เครื่องยนต์เดียว", "detail": "ล็อกอินบัญชีเดียว จ่ายแพ็กเดียว เลือกบานที่เหมาะกับงานตรงหน้า ไม่ใช่คนละยี่ห้อ", "ptype": "หลักการ", "cat": "Cowork", "tech": "-", "work": "", "importance": "กลาง", "effort": "", "source": "ภาคผนวก Modes (#apx-modes)", "tags": "chat,cowork,code", "status": "", "date": "2026-07-14"}, {"id": "NOTE-019", "kind": "TechNote", "title": "Cowork — Skills ลากวาง + Routines + Dispatch + Computer Use", "detail": "แอปเดสก์ท็อปสำหรับ knowledge worker ติดตั้ง Skills แบบลากวาง ตั้งงานอัตโนมัติ สั่งจากมือถือ คุมเครื่องได้", "ptype": "ประยุกต์ใช้", "cat": "Cowork", "tech": "Skills, Dispatch, Computer Use", "work": "", "importance": "สูง", "effort": "", "source": "ภาคผนวก Modes (#apx-modes)", "tags": "cowork,skills", "status": "", "date": "2026-07-14"}, {"id": "NOTE-020", "kind": "TechNote", "title": "Claude Code — CLI + git + hooks + subagents", "detail": "เครื่องมือ CLI บน terminal สำหรับนักพัฒนา เข้ากับ git ตั้ง hooks แตกงานเป็น subagents ทำพร้อมกัน", "ptype": "ประยุกต์ใช้", "cat": "Code", "tech": "CLI, hooks, subagents", "work": "", "importance": "กลาง", "effort": "", "source": "ภาคผนวก Modes (#apx-modes)", "tags": "code,git", "status": "", "date": "2026-07-14"}, {"id": "NOTE-021", "kind": "TechNote", "title": "ปรัชญา Prompt: เล่าเรื่องดีกว่าสั่งเป็นขั้น", "detail": "ให้บริบทและเจตนาแล้วปล่อยให้ Claude คิดต่อ แทนการสั่ง 1-2-3 ที่พังเมื่อเจองานคลุมเครือ", "ptype": "หลักการ", "cat": "Prompt", "tech": "-", "work": "", "importance": "สูง", "effort": "", "source": "ภาคผนวก Prompt (#apx-prompt)", "tags": "prompt,philosophy", "status": "", "date": "2026-07-14"}, {"id": "NOTE-022", "kind": "TechNote", "title": "โครง Prompt ที่ดี 7 องค์ประกอบ", "detail": "Role, Context, Task, Constraints, Examples, Format และเป้าหมาย ยิ่งงานซับซ้อนยิ่งควรครบ", "ptype": "ประยุกต์ใช้", "cat": "Prompt", "tech": "7 components", "work": "", "importance": "สูง", "effort": "", "source": "ภาคผนวก Prompt (#apx-prompt)", "tags": "prompt,structure", "status": "", "date": "2026-07-14"}, {"id": "NOTE-023", "kind": "TechNote", "title": "สอน Claude เหมือน junior เพิ่งเข้าทีม", "detail": "ให้บริบท (โปรเจกต์อะไร) ข้อจำกัด (เงื่อนไข) และเกณฑ์ความสำเร็จ (แบบไหนถึงเรียกว่าดี)", "ptype": "หลักการ", "cat": "Prompt", "tech": "-", "work": "", "importance": "กลาง", "effort": "", "source": "ภาคผนวก Prompt (#apx-prompt)", "tags": "prompt,junior", "status": "", "date": "2026-07-14"}, {"id": "NOTE-024", "kind": "TechNote", "title": "Few-shot — ตัวอย่าง input-output 1-2 คู่", "detail": "แสดงตัวอย่างคู่ input-output สื่อรูปแบบที่ต้องการได้ดีกว่าคำอธิบายยาว ๆ", "ptype": "ประยุกต์ใช้", "cat": "Prompt", "tech": "few-shot", "work": "", "importance": "กลาง", "effort": "", "source": "ภาคผนวก Prompt (#apx-prompt)", "tags": "prompt,fewshot", "status": "", "date": "2026-07-14"}, {"id": "NOTE-025", "kind": "TechNote", "title": "AI to build, deterministic to run", "detail": "ใช้ AI ช่วยสร้าง/ล้างข้อมูลตอนต้น แต่ให้โค้ดที่กำหนดผลแน่นอนเป็นตัวรันงานประจำ แยกงานให้ถูก", "ptype": "หลักการ", "cat": "Code", "tech": "-", "work": "", "importance": "สูง", "effort": "", "source": "บท Analytics (#ch-analytics)", "tags": "analytics,determinism", "status": "", "date": "2026-07-14"}, {"id": "NOTE-026", "kind": "TechNote", "title": "กฎหมาย: เริ่มโปร่งใส จบด้วยตรวจสอบ", "detail": "ระวังคำพิพากษาที่ฟังดูน่าเชื่อแต่ไม่มีจริง ต้องกำกับ AI ด้วยวินัยและ verify ทุกครั้ง", "ptype": "หลักการ", "cat": "Model", "tech": "Verification", "work": "", "importance": "กลาง", "effort": "", "source": "บท Legal (#ch-legal)", "tags": "legal,verify", "status": "", "date": "2026-07-14"}, {"id": "NOTE-027", "kind": "TechNote", "title": "Bedrock — ยก Claude สู่ production องค์กร", "detail": "ปิดช่องว่างจาก prototype สู่สเกลจริง ดูแล privacy โหลดล้านคำขอ และ governance", "ptype": "ประยุกต์ใช้", "cat": "Bedrock", "tech": "Amazon Bedrock", "work": "", "importance": "ต่ำ", "effort": "", "source": "บท Bedrock (#ch-bedrock)", "tags": "bedrock,enterprise", "status": "", "date": "2026-07-14"}, {"id": "NOTE-028", "kind": "TechNote", "title": "Speed is Claude, Soul is Human", "detail": "เร่งงานให้ถูกจุดด้วย AI แต่คงแก่น/วิญญาณงานไว้ที่คน อย่าเร่งผิดจุดจนงานกลวง", "ptype": "หลักการ", "cat": "Model", "tech": "-", "work": "", "importance": "ต่ำ", "effort": "", "source": "บท Adv (#ch-adv)", "tags": "creative,balance", "status": "", "date": "2026-07-14"}, {"id": "APP-01", "kind": "Apply", "title": "สร้าง Skill สรุปเอกสารหลักฐาน OIT อัตโนมัติ", "detail": "ทดลองกับ 26 items ดูว่าย่นเวลาได้จริงไหม", "ptype": "", "cat": "", "tech": "", "work": "ITA-OIT", "importance": "สูง", "effort": "M", "source": "NOTE-019", "tags": "", "status": "idea", "date": "2026-07-14"}, {"id": "APP-02", "kind": "Apply", "title": "เพิ่ม verify step ก่อนนำเข้า ITAS", "detail": "ลด error ตอน key ข้อมูล perception survey", "ptype": "", "cat": "", "tech": "", "work": "ITA-IIT", "importance": "สูง", "effort": "S", "source": "NOTE-003", "tags": "", "status": "idea", "date": "2026-07-14"}, {"id": "APP-03", "kind": "Apply", "title": "ต่อ MCP ให้ dashboard ดึงข้อมูลอัตโนมัติ", "detail": "ประเมิน effort ก่อนเริ่ม", "ptype": "", "cat": "", "tech": "", "work": "Dashboard", "importance": "กลาง", "effort": "L", "source": "NOTE-012", "tags": "", "status": "idea", "date": "2026-07-14"}, {"id": "APP-04", "kind": "Apply", "title": "ใช้ Deep Context ป้อนบริบท ITA ครบตอนร่างบันทึกข้อความ", "detail": "แนบคำสั่ง/บริบทหน่วยงานให้ครบก่อนให้ร่าง", "ptype": "", "cat": "", "tech": "", "work": "ITA-OIT", "importance": "สูง", "effort": "S", "source": "NOTE-001", "tags": "", "status": "idea", "date": "2026-07-14"}, {"id": "APP-05", "kind": "Apply", "title": "ใช้ Haiku รันงานนับ/ประมวลผล survey ปริมาณมาก", "detail": "คุมต้นทุนงานเรียกซ้ำเยอะ", "ptype": "", "cat": "", "tech": "", "work": "ITA-IIT", "importance": "กลาง", "effort": "M", "source": "NOTE-017", "tags": "", "status": "idea", "date": "2026-07-14"}, {"id": "APP-06", "kind": "Apply", "title": "ตั้ง Routine อัปเดต dashboard อัตโนมัติทุกเช้า", "detail": "ให้ข้อมูลสดโดยไม่ต้องรันมือ", "ptype": "", "cat": "", "tech": "", "work": "Dashboard", "importance": "กลาง", "effort": "M", "source": "NOTE-008", "tags": "", "status": "idea", "date": "2026-07-14"}, {"id": "APP-07", "kind": "Apply", "title": "ทำ prompt library ตามโครง 7 องค์ประกอบ", "detail": "มาตรฐานการเขียน prompt ให้ทีม สวท.", "ptype": "", "cat": "", "tech": "", "work": "Prompt", "importance": "สูง", "effort": "M", "source": "NOTE-022", "tags": "", "status": "idea", "date": "2026-07-14"}];
+
+// map หัวคอลัมน์ไทยจาก CSV -> คีย์ภายใน
+const COLMAP = {
+  "ID":"id","ชนิด":"kind","หัวข้อ":"title","รายละเอียด":"detail","ประเภท":"ptype",
+  "หมวด":"cat","ศัพท์เทคนิค (คง EN)":"tech","เกี่ยวกับงาน":"work",
+  "ความสำคัญ/Priority":"importance","Effort":"effort","ที่มา/อ้างอิง":"source",
+  "Tags":"tags","สถานะ":"status","วันที่":"date"
+};
+const CATS = ["Prompt","MCP","Model","Cowork","Code","Loop","Bedrock","Welfare"];
+let ALL = [], charts = {};
+
+const cssvar = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+const $ = id => document.getElementById(id);
+
+function normalize(rows){
+  return rows.map(r=>{
+    const o={}; for(const k in r){ const key=COLMAP[k.trim()]||k.trim(); o[key]=(r[k]||"").toString().trim(); }
+    return o;
+  }).filter(r=>r.id);
+}
+
+async function loadData(){
+  if(CSV_URL){
+    try{
+      const url = CSV_URL + (CSV_URL.includes("?")?"&":"?") + "_cb=" + Date.now();
+      const resp = await fetch(url, {cache:"no-store"});
+      if(!resp.ok) throw new Error("HTTP "+resp.status);
+      const text = await resp.text();
+      const parsed = Papa.parse(text, {header:true, skipEmptyLines:true});
+      const rows = normalize(parsed.data);
+      if(!rows.length) throw new Error("CSV ว่าง");
+      ALL = rows; setSource("Live · "+rows.length+" แถว · "+new Date().toLocaleTimeString('th-TH'), true);
+      return;
+    }catch(e){
+      ALL = EMBEDDED;
+      const why = /Failed to fetch|NetworkError|TypeError/i.test(e.message||e)
+        ? "เชื่อมเน็ตไม่ได้ (มักเกิดเมื่อดูในหน้า preview หรือเปิดแบบ file://) — ให้ดาวน์โหลดไฟล์แล้วเปิดใน browser tab จริง"
+        : "เชื่อม Live ไม่สำเร็จ: "+(e.message||e);
+      setSource("ข้อมูลสำรองในไฟล์", false, why);
+      return;
+    }
+  }
+  ALL = EMBEDDED; setSource("ข้อมูลสำรองในไฟล์", false);
+}
+
+function setSource(label, live, errNote){
+  $("srcTag").innerHTML = "แหล่งข้อมูล: <b>"+label+"</b>";
+  const b = $("banner");
+  if(live){
+    b.style.display="none";
+  }else{
+    b.style.display="block";
+    b.innerHTML = (errNote?("<b>"+errNote+"</b> — ") : "")+
+      "กำลังแสดง <b>ข้อมูลตัวอย่างที่ฝังในไฟล์</b> ("+EMBEDDED.length+" รายการ). "+
+      "ต้องการดึงข้อมูลสดจาก Google Sheet: เปิดไฟล์ .html ด้วย editor แล้ววาง URL ที่ "+
+      "<code>CSV_URL</code> — โดย publish แท็บ 'คลังข้อมูล' เป็น CSV ผ่านเมนู "+
+      "File &rsaquo; Share &rsaquo; Publish to web";
+  }
+}
+
+function render(){
+  const total=ALL.length;
+  const cnt=k=>ALL.filter(r=>r.kind===k).length;
+  $("k-sum").textContent=cnt("Summary"); $("k-note").textContent=cnt("TechNote");
+  $("k-app").textContent=cnt("Apply");  $("k-all").textContent=total;
+  const fc=$("fCat");
+  if(fc.options.length<=1){ CATS.forEach(c=>{const o=document.createElement("option");o.textContent=c;fc.appendChild(o);}); }
+  drawCharts(); renderTable();
+  $("ts").textContent = (ALL[0]&&ALL[0].date)||"";
+}
+
+function countBy(kind, field, keys){
+  const notes=ALL.filter(r=>r.kind===kind);
+  return keys.map(k=>notes.filter(r=>r[field]===k).length);
+}
+
+function drawCharts(){
+  Object.values(charts).forEach(c=>c&&c.destroy());
+  const ink=cssvar('--ink'), line=cssvar('--line'), muted=cssvar('--muted');
+  const acc=cssvar('--accent'), sum=cssvar('--sum'), note=cssvar('--note'), app=cssvar('--app');
+  Chart.defaults.font.family="Sarabun"; Chart.defaults.color=muted;
+  const palette=[note,'#D98B5A','#8A6D4B','#5B8AA6','#7A9A4E','#B07A9E','#C9A44C','#9E7B5A'];
+
+  charts.cat=new Chart($("chCat"),{type:'bar',
+    data:{labels:CATS,datasets:[{data:countBy("TechNote","cat",CATS),backgroundColor:acc,borderRadius:5}]},
+    options:{plugins:{legend:{display:false}},maintainAspectRatio:false,
+      scales:{x:{grid:{display:false},ticks:{color:muted}},y:{grid:{color:line},ticks:{color:muted,precision:0}}}}});
+
+  const tk=["หลักการ","ประยุกต์ใช้"];
+  charts.type=new Chart($("chType"),{type:'doughnut',
+    data:{labels:tk,datasets:[{data:countBy("TechNote","ptype",tk),backgroundColor:[note,sum],borderWidth:0}]},
+    options:{cutout:'62%',maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:ink,padding:14}}}}});
+
+  const ik=["สูง","กลาง","ต่ำ"];
+  charts.imp=new Chart($("chImp"),{type:'bar',
+    data:{labels:ik,datasets:[{data:countBy("TechNote","importance",ik),backgroundColor:[acc,'#C9A44C','#B9AC97'],borderRadius:5}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},maintainAspectRatio:false,
+      scales:{x:{grid:{color:line},ticks:{color:muted,precision:0}},y:{grid:{display:false},ticks:{color:ink}}}}});
+
+  const sk=["idea","กำลังลอง","ใช้จริง","พับ"];
+  charts.app=new Chart($("chApp"),{type:'doughnut',
+    data:{labels:sk,datasets:[{data:countBy("Apply","status",sk),backgroundColor:[app,'#C9A44C','#5B8AA6','#B9AC97'],borderWidth:0}]},
+    options:{cutout:'62%',maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:ink,padding:12}}}}});
+}
+
+function renderTable(){
+  const q=$("q").value.toLowerCase().trim(), fk=$("fKind").value, fc=$("fCat").value;
+  const rows=ALL.filter(r=>{
+    if(fk&&r.kind!==fk) return false;
+    if(fc&&r.cat!==fc) return false;
+    if(q){ const hay=(r.title+" "+r.detail+" "+r.tags+" "+r.tech).toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  $("cnt").textContent=rows.length;
+  const cls={Summary:"b-sum",TechNote:"b-note",Apply:"b-app"};
+  const tb=$("tbody");
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="7" class="empty">ไม่พบรายการที่ตรงเงื่อนไข — ลองล้างตัวกรอง</td></tr>'; return; }
+  tb.innerHTML=rows.map(r=>{
+    const tags=(r.tags||"").split(",").filter(Boolean).map(t=>'<span class="tag">'+t.trim()+'</span>').join("");
+    const impCls=r.importance==="สูง"?'imp-สูง':'';
+    return '<tr>'+
+      '<td class="src">'+r.id+'</td>'+
+      '<td><span class="badge '+(cls[r.kind]||'')+'">'+r.kind+'</span></td>'+
+      '<td><div class="cell-title">'+r.title+'</div>'+
+        (r.detail?'<div class="cell-detail">'+r.detail+'</div>':'')+'</td>'+
+      '<td class="hide-sm">'+(r.cat||'—')+'</td>'+
+      '<td class="hide-sm '+impCls+'">'+(r.importance||'—')+'</td>'+
+      '<td class="hide-sm">'+(tags||'—')+'</td>'+
+      '<td class="hide-sm src">'+(r.source||'—')+'</td>'+
+    '</tr>';
+  }).join("");
+}
+
+// theme
+function initTheme(){
+  let t="light"; try{ t=localStorage.getItem("kb-theme")||"light"; }catch(e){}
+  applyTheme(t);
+  $("themeBtn").onclick=()=>{ const n=document.body.dataset.theme==="dark"?"light":"dark";
+    applyTheme(n); try{localStorage.setItem("kb-theme",n);}catch(e){} drawCharts(); };
+}
+function applyTheme(t){ document.body.dataset.theme=t; $("themeBtn").textContent=t==="dark"?"☀️":"🌙"; }
+
+["q","fKind","fCat"].forEach(id=>$(id).addEventListener("input",renderTable));
+
+async function refresh(){ await loadData(); render(); }
+$("reloadBtn").onclick = async ()=>{ $("reloadBtn").textContent="…"; await refresh(); $("reloadBtn").textContent="↻"; };
+(async function(){ initTheme(); await refresh(); if(CSV_URL) setInterval(refresh, 5*60*1000); })();
+</script>
+</body>
+</html>
